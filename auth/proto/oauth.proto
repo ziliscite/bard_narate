@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package oauth;
+
+option go_package = "github.com/ziliscite/bard_narate/auth/pkg/protobuf";
+
+import "google/protobuf/timestamp.proto";
+
+enum Provider {
+  GOOGLE = 0;
+  GITHUB = 1;
+}
+
+message URLRequest {
+  Provider provider = 1;
+  string state = 2;
+}
+
+message URLResponse {
+  string url = 1;
+}
+
+message CallbackRequest {
+  Provider provider = 1;
+  string code = 2;
+}
+
+message CallbackResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp access_token_expire_at = 3;
+  google.protobuf.Timestamp refresh_token_expire_at = 4;
+}
+
+service OAuthService {
+  rpc AuthenticationURL(URLRequest) returns (URLResponse);
+  rpc AuthenticationCallback(CallbackRequest) returns (CallbackResponse);
+}
+
+message UserInfoRequest {
+  string access_token = 1;
+}
+
+message UserInfoResponse {
+  uint64 id = 1;
+  Provider provider = 2;
+  string provider_user_id = 3;
+  optional string picture = 4;
+  string email = 5;
+  string name = 6;
+  optional string username = 7;
+}
+
+message RefreshTokenRequest {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  google.protobuf.Timestamp access_token_expire_at = 3;
+  google.protobuf.Timestamp refresh_token_expire_at = 4;
+}
+
+service ServerAuthService {
+  rpc UserInfo(UserInfoRequest) returns (UserInfoResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+}

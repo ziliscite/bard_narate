@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package job;
+
+option go_package = "github.com/ziliscite/bard_narate/job/pkg/protobuf";
+
+enum Status {
+  Pending = 0;
+  Processing = 1;
+  Converting = 2;
+  Completed = 3;
+  Failed = 4;
+}
+
+message Job {
+  string id = 1;
+  Status status = 2;
+  string file_key = 3;
+}
+
+message NewJobRequest {
+  string file_key = 1;
+}
+
+message NewJobResponse {
+  Job job = 1;
+}
+
+message GetJobRequest {
+  string id = 1;
+}
+
+message GetJobResponse {
+  Job job = 1;
+}
+
+service JobService {
+  rpc New(NewJobRequest) returns (NewJobResponse);
+  rpc Get(GetJobRequest) returns (GetJobResponse);
+}
+
