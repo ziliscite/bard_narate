@@ -20,7 +20,7 @@ func NewOrderService(pr repository.Plan, tr repository.Transaction, sr repositor
 	}
 }
 
-func (o *Order) Checkout(ctx context.Context, userID uint64, plan *domain.Plan, options ...domain.ProcessingOption) (*domain.Transaction, error) {
+func (o *Order) Checkout(ctx context.Context, userID uint64, plan domain.Plan, options ...domain.ProcessingOption) (*domain.Transaction, error) {
 	// Create a new transaction
 	transaction, err := o.tr.New(ctx, userID, plan.ID, plan.Currency.String(), plan.Price, func(tr *domain.Transaction) error {
 		for _, opts := range options {

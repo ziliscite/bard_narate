@@ -106,6 +106,18 @@ func (p *paymentService) validatePayload(notification, status midtrans.PaymentSt
 		return fmt.Errorf("invalid transaction id")
 	}
 
+	if notification.StatusMessage != status.StatusMessage {
+		return fmt.Errorf("invalid status message")
+	}
+
+	if notification.StatusCode != status.StatusCode {
+		return fmt.Errorf("invalid status code")
+	}
+
+	if notification.SignatureKey != status.SignatureKey {
+		return fmt.Errorf("invalid signature key")
+	}
+
 	if notification.OrderId != status.OrderId {
 		return fmt.Errorf("invalid status code")
 	}

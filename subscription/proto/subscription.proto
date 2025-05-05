@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package subscription;
+
+option go_package = "github.com/ziliscite/bard_narate/subscription/pkg/protobuf";
+
+message CheckoutRequest {
+  uint64 user_id = 1;
+  uint64 plan_id = 2;
+  optional string discount_code = 3;
+}
+
+message CheckoutResponse {
+  string payment_url = 1;
+}
+
+message WebhookRequest {
+  bytes payload = 1; // raw JSON
+}
+
+enum Status {
+  Pending = 0;
+  Completed = 3;
+  Failed = 4;
+}
+
+message WebhookResponse {
+    Status status = 1;
+}
+
+service OrderService {
+  rpc Checkout(CheckoutRequest) returns (CheckoutResponse);
+  rpc HandleWebhook(WebhookRequest) returns (WebhookResponse);
+}
+

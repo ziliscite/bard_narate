@@ -12,13 +12,21 @@ import (
 	"github.com/ziliscite/bard_narate/subscription/pkg/postgres"
 )
 
-type Discount interface {
+type Validator interface {
 	// ValidateAndGet get discount plans and validates if the discount is applicable to the plan.
 	ValidateAndGet(ctx context.Context, code string, planID uint64) (*domain.Discount, bool, error)
+}
+
+type Write interface {
 	// Create creates a new plan in the database.
 	Create(ctx context.Context, discount *domain.Discount) error
 	// AttachPlansToDiscount adds plans to a discount in batch operation
 	AttachPlansToDiscount(ctx context.Context, discountID uint64, planIDs []uint64) error
+}
+
+type Discount interface {
+	Validator
+	Write
 }
 
 type discountRepo struct {

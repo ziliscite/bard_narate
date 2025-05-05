@@ -13,7 +13,7 @@ type Plan interface {
 
 type planService struct {
 	pr repository.Plan
-	dr repository.Discount
+	dr repository.Validator
 }
 
 func NewPlanService(pr repository.Plan, dr repository.Discount) Plan {

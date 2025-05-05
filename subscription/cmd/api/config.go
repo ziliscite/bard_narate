@@ -9,8 +9,8 @@ import (
 )
 
 type Payment struct {
-	midTransClientKey string
-	midTransServerKey string
+	serverKey string
+	url       string
 }
 
 type DB struct {
@@ -64,8 +64,8 @@ func getConfig() Config {
 
 		flag.BoolVar(&instance.db.ssl, "db-ssl", ssl, "Database ssl")
 
-		flag.StringVar(&instance.pm.midTransClientKey, "mt-client", os.Getenv("MIDTRANS_CLIENT_KEY"), "Client Key")
-		flag.StringVar(&instance.pm.midTransServerKey, "mt-server", os.Getenv("MIDTRANS_SERVER_KEY"), "Server Key")
+		flag.StringVar(&instance.pm.serverKey, "mt-server", os.Getenv("MIDTRANS_SERVER_KEY"), "Server Key")
+		flag.StringVar(&instance.pm.url, "mt-url", os.Getenv("MIDTRANS_URL"), "URL")
 
 		flag.Parse()
 	})
