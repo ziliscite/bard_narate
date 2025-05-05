@@ -105,47 +105,39 @@ func NewTransaction(
 	}, nil
 }
 
-//// CalculateTotal will calculate the total
-//func (t *Transaction) CalculateTotal() float64 {
-//	// Apply discount first
-//	discounted := t.SubTotal
-//	if t.Discount != 0 {
-//		discounted = discounted - (t.SubTotal * t.Discount / 100)
-//	}
-//
-//	// Calculate tax on a discounted amount
-//	taxed := 0.0
-//	if t.Tax != 0 {
-//		taxed = discounted * t.Tax
-//	}
-//
-//	// Calculate processing fee on amount after tax
-//	fee := 0.0
-//	if t.ProcessingFee != 0 {
-//		fee = (discounted + taxed) * t.ProcessingFee
-//	}
-//
-//	// Sum all components
-//	t.Total = discounted + taxed + fee
-//	return t.Total
-//}
-
-// ApplyDiscount adds discount in percentage. E.g., 10 -> 10% discount.
-func (t *Transaction) ApplyDiscount(discount *float64) *Transaction {
-	t.Discount = discount
-	return t
+func (t *Transaction) IsCompleted() bool {
+	return t.Status == Completed
 }
 
-// ApplyTax adds tax in percentage. E.g., 10 -> 10% tax.
-func (t *Transaction) ApplyTax(tax *float64) *Transaction {
-	t.Tax = tax
-	return t
+func (t *Transaction) Complete() {
+	t.Status = Completed
 }
 
-// ApplyFee adds fee in percentage. E.g., 10 -> 10% fee.
-func (t *Transaction) ApplyFee(processingFee *float64) *Transaction {
-	t.ProcessingFee = processingFee
-	return t
+func (t *Transaction) Cancel() {
+	t.Status = Failed
+}
+
+type ProcessingOption func(*Transaction)
+
+// WithDiscount adds discount in percentage. E.g., 10 -> 10% discount.
+func WithDiscount(f float64) ProcessingOption {
+	return func(s *Transaction) {
+		s.Discount = &f
+	}
+}
+
+// WithTax adds discount in percentage. E.g., 10 -> 10% discount.
+func WithTax(f float64) ProcessingOption {
+	return func(s *Transaction) {
+		s.Tax = &f
+	}
+}
+
+// WithFees adds discount in percentage. E.g., 10 -> 10% discount.
+func WithFees(f float64) ProcessingOption {
+	return func(s *Transaction) {
+		s.ProcessingFee = &f
+	}
 }
 
 // CalculateFinalAmount will calculate the final price for the transaction.
@@ -189,16 +181,4 @@ func (t *Transaction) CalculateFinalAmount() error {
 	}
 
 	return nil
-}
-
-func (t *Transaction) IsCompleted() bool {
-	return t.Status == Completed
-}
-
-func (t *Transaction) Complete() {
-	t.Status = Completed
-}
-
-func (t *Transaction) Cancel() {
-	t.Status = Failed
 }

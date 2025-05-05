@@ -20,16 +20,14 @@ func NewOrderService(pr repository.Plan, tr repository.Transaction, sr repositor
 	}
 }
 
-func (o *Order) Checkout(ctx context.Context, userID uint64, plan *domain.Plan, discount *float64, tax *float64, fee *float64) (*domain.Transaction, error) {
-	//tax := 10.0
-	//fee := 6.0
-
+func (o *Order) Checkout(ctx context.Context, userID uint64, plan *domain.Plan, options ...domain.ProcessingOption) (*domain.Transaction, error) {
 	// Create a new transaction
 	transaction, err := o.tr.New(ctx, userID, plan.ID, plan.Currency.String(), plan.Price, func(tr *domain.Transaction) error {
-		return tr.ApplyTax(tax).
-			ApplyFee(fee).
-			ApplyDiscount(discount).
-			CalculateFinalAmount()
+		for _, opts := range options {
+			opts(tr)
+		}
+
+		return tr.CalculateFinalAmount()
 	})
 	if err != nil {
 		return nil, err
@@ -71,6 +69,7 @@ func (o *Order) Finalize(ctx context.Context, transactionID string) error {
 		}
 	}
 
+	// either there is no active sub or if it is expired, create a new sub
 	return o.sr.Create(ctx, newSub, transaction)
 }
 
