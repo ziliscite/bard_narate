@@ -2,25 +2,32 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/ziliscite/bard_narate/subscription/internal/domain"
 	"github.com/ziliscite/bard_narate/subscription/internal/repository"
 )
 
-type Order struct {
-	pr repository.Plan
+type Order interface {
+	Checkout(ctx context.Context, userID uint64, plan *domain.Plan, options ...domain.ProcessingOption) (*domain.Transaction, error)
+	Finalize(ctx context.Context, transactionID string) error
+	Cancel(ctx context.Context, transactionID string) error
+}
+
+type orderService struct {
+	pr repository.PlanReader
 	tr repository.Transaction
 	sr repository.Subscription
 }
 
 func NewOrderService(pr repository.Plan, tr repository.Transaction, sr repository.Subscription) Order {
-	return Order{
+	return &orderService{
 		pr: pr,
 		tr: tr,
 		sr: sr,
 	}
 }
 
-func (o *Order) Checkout(ctx context.Context, userID uint64, plan domain.Plan, options ...domain.ProcessingOption) (*domain.Transaction, error) {
+func (o *orderService) Checkout(ctx context.Context, userID uint64, plan *domain.Plan, options ...domain.ProcessingOption) (*domain.Transaction, error) {
 	// Create a new transaction
 	transaction, err := o.tr.New(ctx, userID, plan.ID, plan.Currency.String(), plan.Price, func(tr *domain.Transaction) error {
 		for _, opts := range options {
@@ -36,7 +43,7 @@ func (o *Order) Checkout(ctx context.Context, userID uint64, plan domain.Plan, o
 	return transaction, nil
 }
 
-func (o *Order) Finalize(ctx context.Context, transactionID string) error {
+func (o *orderService) Finalize(ctx context.Context, transactionID string) error {
 	transaction, order, err := o.tr.GetTransactionAndOrder(ctx, transactionID)
 	if err != nil {
 		return err
@@ -59,6 +66,10 @@ func (o *Order) Finalize(ctx context.Context, transactionID string) error {
 
 	transaction.Complete()
 	if activeSub != nil && !activeSub.IsExpired() {
+		if activeSub.UserID != newSub.UserID {
+			return fmt.Errorf("cannot transfer subscription between users")
+		}
+
 		return o.sr.PauseAndCreate(ctx, activeSub, newSub, transaction)
 	}
 
@@ -73,7 +84,7 @@ func (o *Order) Finalize(ctx context.Context, transactionID string) error {
 	return o.sr.Create(ctx, newSub, transaction)
 }
 
-func (o *Order) Cancel(ctx context.Context, transactionID string) error {
+func (o *orderService) Cancel(ctx context.Context, transactionID string) error {
 	transaction, err := o.tr.GetTransaction(ctx, transactionID)
 	if err != nil {
 		return err

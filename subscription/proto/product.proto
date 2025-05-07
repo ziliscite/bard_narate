@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "github.com/ziliscite/bard_narate/subscription/pkg/protobuf";
+
+message Plan {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  string currency = 5;
+  uint32 duration_days = 6;
+  string created_at = 7;
+  string updated_at = 8;
+  uint64 version = 9;
+}
+
+message Nothing {
+}
+
+message GetPlansResponse {
+  repeated Plan plans = 1;
+}
+
+message PlanRequest {
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  string currency = 5;
+  uint32 duration_days = 6;
+}
+
+service PlanService {
+  rpc GetPlans(Nothing) returns (GetPlansResponse);
+  rpc CreatePlan(PlanRequest) returns (Nothing);
+  rpc UpdatePlan(PlanRequest) returns (Nothing);
+}
+
+message Discount {
+
+}
+

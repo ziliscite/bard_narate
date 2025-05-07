@@ -9,6 +9,7 @@ var (
 	ErrInvalidDiscount  = errors.New("discount is not applicable to this plan")
 	ErrExpiredDiscount  = errors.New("discount is expired")
 	ErrInActiveDiscount = errors.New("discount is not yet active")
+	ErrEmptyDiscount    = errors.New("discount cannot be empty")
 )
 
 type Plan struct {

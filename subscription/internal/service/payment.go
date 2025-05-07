@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/ziliscite/bard_narate/subscription/internal/domain"
 	"github.com/ziliscite/bard_narate/subscription/pkg/midtrans"
@@ -11,7 +10,7 @@ import (
 
 type Payment interface {
 	GetSnapURL(ctx context.Context, transaction *domain.Transaction, plan *domain.Plan) (string, error)
-	VerifyPayment(ctx context.Context, payload []byte) (error, domain.PaymentStatus)
+	VerifyPayment(ctx context.Context, notification *midtrans.PaymentStatus) (domain.PaymentStatus, error)
 }
 
 type paymentService struct {
@@ -25,7 +24,10 @@ func NewPayment(pg *midtrans.Client) Payment {
 }
 
 func (p *paymentService) GetSnapURL(ctx context.Context, transaction *domain.Transaction, plan *domain.Plan) (string, error) {
+	// Round to make it an int
 	total := int64(math.Ceil(transaction.Total))
+
+	// Build request
 	request := midtrans.SnapTokenRequest{
 		TransactionDetails: midtrans.TransactionDetails{
 			OrderID:  transaction.ID.String(),
@@ -53,44 +55,44 @@ func (p *paymentService) GetSnapURL(ctx context.Context, transaction *domain.Tra
 	return res.RedirectURL, nil
 }
 
-func (p *paymentService) VerifyPayment(ctx context.Context, payload []byte) (error, domain.PaymentStatus) {
-	var notification midtrans.PaymentStatus
-	if err := json.Unmarshal(payload, &notification); err != nil {
-		return err, 0
-	}
+func (p *paymentService) VerifyPayment(ctx context.Context, notification *midtrans.PaymentStatus) (domain.PaymentStatus, error) {
+	//var notification midtrans.PaymentStatus
+	//if err := json.Unmarshal(payload, &notification); err != nil {
+	//	return 0, err
+	//}
 
 	// validate signature
 	ok := p.pg.ValidateSignature(notification.OrderId, notification.StatusCode, notification.GrossAmount, notification.SignatureKey)
 	if !ok {
-		return fmt.Errorf("invalid signature key"), 0
+		return 0, fmt.Errorf("invalid signature key")
 	}
 
 	// validate through status
 	status, err := p.pg.GetTransactionStatus(ctx, notification.OrderId)
 	if err != nil {
-		return err, 0
+		return 0, err
 	}
 
-	if err = p.validatePayload(notification, *status); err != nil {
-		return err, 0
+	if err = p.validatePayload(*notification, *status); err != nil {
+		return 0, err
 	}
 
 	switch notification.TransactionStatus {
 	case "capture":
 		if notification.FraudStatus == "accept" {
-			return nil, domain.Completed
+			return domain.Completed, nil
+		} else {
+			return domain.Failed, nil
 		}
 	case "settlement":
-		return nil, domain.Completed
+		return domain.Completed, nil
 	case "cancel", "deny", "expire", "failure":
-		return nil, domain.Failed
+		return domain.Failed, nil
 	case "pending":
-		return nil, domain.Pending
+		return domain.Pending, nil
 	default:
-		return fmt.Errorf("unknown transaction status: %s", notification.TransactionStatus), 0
+		return 0, fmt.Errorf("unknown transaction status: %s", notification.TransactionStatus)
 	}
-
-	return fmt.Errorf("unknown transaction status: %s", notification.TransactionStatus), 0
 }
 
 func (p *paymentService) validatePayload(notification, status midtrans.PaymentStatus) error {

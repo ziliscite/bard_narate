@@ -12,23 +12,36 @@ import (
 	"github.com/ziliscite/bard_narate/subscription/pkg/postgres"
 )
 
-type Subscription interface {
+type SubscriptionReader interface {
+	// GetAll retrieves all subscriptions by user id from the database.
+	GetAll(ctx context.Context, userId uint64) ([]*domain.Subscription, error)
+	// GetActive retrieves the active subscription.
+	GetActive(ctx context.Context, userId uint64) (*domain.Subscription, error)
+}
+
+type SubscriptionWriter interface {
 	// Create creates a new subscription in the database.
 	Create(ctx context.Context, subscription *domain.Subscription, transaction *domain.Transaction) error
 	// PauseAndCreate pauses an active subscription and creates a new one.
 	PauseAndCreate(ctx context.Context, pausedSub, newSub *domain.Subscription, transaction *domain.Transaction) error
 
-	// GetAll retrieves all subscriptions by user id from the database.
-	GetAll(ctx context.Context, userId uint64) ([]*domain.Subscription, error)
-	// GetActive retrieves the active subscription.
-	GetActive(ctx context.Context, userId uint64) (*domain.Subscription, error)
-
 	// Update updates an existing subscription in the database.
 	Update(ctx context.Context, id uuid.UUID, subscription *domain.Subscription) error
 }
 
+type Subscription interface {
+	SubscriptionReader
+	SubscriptionWriter
+}
+
 type subscriptionRepo struct {
 	db *pgxpool.Pool
+}
+
+func NewSubscriptionRepository(db *pgxpool.Pool) Subscription {
+	return &subscriptionRepo{
+		db: db,
+	}
 }
 
 func (s *subscriptionRepo) Create(ctx context.Context, subscription *domain.Subscription, transaction *domain.Transaction) error {
@@ -43,10 +56,6 @@ func (s *subscriptionRepo) Create(ctx context.Context, subscription *domain.Subs
 
 func (s *subscriptionRepo) PauseAndCreate(ctx context.Context, pausedSub, newSub *domain.Subscription, transaction *domain.Transaction) error {
 	return postgres.RunInTx(ctx, s.db, func(tx pgx.Tx) error {
-		if pausedSub.UserID != newSub.UserID {
-			return fmt.Errorf("cannot transfer subscription between users: %w", ErrInvalid)
-		}
-
 		if _, err := tx.Exec(ctx, `
 			UPDATE subscriptions
 			SET status = 'PAUSED', paused_at = NOW(), remaining_days = EXTRACT(DAY FROM (end_date - NOW()))
@@ -116,7 +125,12 @@ func (s *subscriptionRepo) GetAll(ctx context.Context, userId uint64) ([]*domain
 		WHERE user_id = $1
 	`, userId)
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			return nil, fmt.Errorf("subscriptions %w: %w", ErrNotFound, err)
+		default:
+			return nil, fmt.Errorf("%w: %w", ErrUnknown, err)
+		}
 	}
 
 	for rows.Next() {
