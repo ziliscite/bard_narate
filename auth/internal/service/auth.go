@@ -42,6 +42,8 @@ func (a *Authenticator) Authenticate(ctx context.Context, accessToken string) (*
 		return nil, err
 	}
 
+	// check if
+
 	return user, nil
 }
 

@@ -25,7 +25,7 @@ class Inference:
         """
         Generate complete audio file from text string.
         """
-        if voice == None:
+        if voice is None:
             voice = "af_bella"
     
         # output_file must have extention, like .wav
@@ -57,7 +57,7 @@ class Inference:
         Return output file path.
         """
 
-        if voice == None:
+        if voice is None:
             voice = "af_bella"
 
         generator = self._pipeline(

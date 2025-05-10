@@ -9,7 +9,7 @@ import (
 type JobService interface {
 	New(ctx context.Context, fileKey string) (*domain.Job, error)
 	Get(ctx context.Context, id string) (*domain.Job, error)
-	UpdateStatus(ctx context.Context, id string, status domain.JobStatus) error
+	Update(ctx context.Context, job *domain.Job) error
 }
 
 type jobService struct {
@@ -42,10 +42,9 @@ func (js *jobService) UpdateStatus(ctx context.Context, id string, status domain
 	}
 
 	job.SetStatus(status)
+	return js.jr.Update(ctx, job)
+}
 
-	if err = js.jr.Update(ctx, job); err != nil {
-		return err
-	}
-
-	return nil
+func (js *jobService) Update(ctx context.Context, job *domain.Job) error {
+	return js.jr.Update(ctx, job)
 }

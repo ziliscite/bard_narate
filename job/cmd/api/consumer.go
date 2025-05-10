@@ -88,7 +88,7 @@ func (c *Consumer) consumeJob(ctx context.Context, msg []byte) error {
 	var req struct {
 		JobId     string `json:"job_id"`
 		JobStatus string `json:"job_status"`
-		// no need filekey
+		FileKey   string `json:"file_key"`
 	}
 
 	if err := json.Unmarshal(msg, &req); err != nil {
@@ -100,7 +100,6 @@ func (c *Consumer) consumeJob(ctx context.Context, msg []byte) error {
 	}
 
 	var status domain.JobStatus
-
 	switch req.JobStatus {
 	case "Pending":
 		status = domain.Pending
@@ -116,7 +115,14 @@ func (c *Consumer) consumeJob(ctx context.Context, msg []byte) error {
 		return errors.New("invalid job status")
 	}
 
-	if err := c.js.UpdateStatus(ctx, req.JobId, status); err != nil {
+	job, err := c.js.Get(ctx, req.JobId)
+	if err != nil {
+		return err
+	}
+
+	job.SetStatus(status)
+	job.SetFileKey(req.FileKey)
+	if err := c.js.Update(ctx, job); err != nil {
 		return err
 	}
 

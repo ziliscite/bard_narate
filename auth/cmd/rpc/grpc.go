@@ -26,10 +26,6 @@ func NewAuthenticationService(as service.ServerAuthenticator, oas service.OAuthA
 
 func (s *AuthenticationServer) AuthenticationURL(_ context.Context, req *pb.URLRequest) (*pb.URLResponse, error) {
 	provider := req.GetProvider().String()
-	//if provider == "" {
-	//	return nil, status.Error(codes.InvalidArgument, "invalid provider")
-	//}
-
 	url, err := s.oas.AuthenticationURL(provider, req.GetState())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to get authentication URL")

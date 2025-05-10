@@ -3,10 +3,11 @@ FROM python:3.10-slim-bullseye
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \                  # FFmpeg runtime
-    build-essential \         # Compiler tools (gcc, g++, make)
-    cmake \                   # CMake for building C/C++ projects
-    libsndfile1-dev \         # Required for librosa/soundfile
+    ffmpeg \                  # FFmpeg runtime \
+    build-essential \         # Compiler tools (gcc, g++, make) \
+    cmake \                   # CMake for building C/C++ projects \
+    libsndfile1-dev \         # Required for librosa/soundfile \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

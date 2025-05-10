@@ -52,3 +52,8 @@ func (j *Job) SetStatus(status JobStatus) {
 	j.Status = status
 	j.UpdatedAt = time.Now()
 }
+
+func (j *Job) SetFileKey(fileKey string) {
+	j.FileKey = fileKey
+	j.UpdatedAt = time.Now()
+}
